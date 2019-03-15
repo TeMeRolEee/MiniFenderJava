@@ -4,7 +4,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import com.github.msteinbeck.sig4j.*;
 
 public class DBManager extends Thread {
     private String url;
