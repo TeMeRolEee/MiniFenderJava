@@ -2,7 +2,9 @@ package com.company;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import com.github.msteinbeck.sig4j.*;
 
 public class DBManager extends Thread {
     private String url;
@@ -18,11 +20,21 @@ public class DBManager extends Thread {
     }
 
     /**
-     * @param url example: "jdbc:sqlite:C://sqlite/db/test.db"
+     * @param url example: "C://sqlite/db/test.db"
      * @return TRUE if init was successful / FALSE if init was unsuccessful
      */
     public boolean init(String url) {
-        this.url = "jdbc:sqlite:" + url;
+        if (!url.isEmpty()) {
+            this.url = "jdbc:sqlite:" + url;
+            String query = "CREATE TABLE IF NOT EXISTS \"scanHistory\" ( `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE, `scanResult` INTEGER NOT NULL DEFAULT 0, `engineResults` TEXT NOT NULL, `scanDate` INTEGER NOT NULL )";
+            try(Connection connection = this.connection();
+                PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
         return false;
     }
 
