@@ -1,20 +1,28 @@
 package com.company;
 
 import com.github.msteinbeck.sig4j.signal.Signal1;
-import org.json.simple.JSONObject;
 import org.json.simple.JSONArray;
-import org.json.simple.JSONValue;
-import org.json.simple.parser.ParseException;
-import org.json.simple.parser.JSONParser;
+import org.json.simple.JSONObject;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.Map;
-import java.util.UUID;
+import java.sql.*;
 
 public class DBManager extends Thread {
+    protected Signal1<Integer> getLastXScan_signal;
+    protected Signal1<JSONArray> getLastXScanDone_signal;
+
+    protected Signal1<JSONObject> addScanData_signal;
+    protected Signal1<Boolean> addScanDataDone_signal;
+
+    public DBManager() {
+        getLastXScan_signal = new Signal1<>();
+        getLastXScanDone_signal = new Signal1<>();
+        addScanData_signal = new Signal1<>();
+        addScanDataDone_signal = new Signal1<>();
+
+        this.addScanData_signal.connect(this::addScanData_slot);
+        this.getLastXScan_signal.connect(this::getLastXScan_slot);
+    }
+
     @Override
     public void run() {
         super.run();
@@ -49,7 +57,7 @@ public class DBManager extends Thread {
                  PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
                 boolean queryResult = preparedStatement.execute();
-                preparedStatement.close();
+                connection.close();
 
                 return queryResult;
             } catch (SQLException e) {
@@ -59,18 +67,7 @@ public class DBManager extends Thread {
         return false;
     }
 
-    /**
-     * @param url sets the url variable to the parameter value
-     */
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
-    public String getUrl() {
-        return url;
-    }
-
-    public boolean addScanData(JSONObject jsonObject) throws ParseException {
+    private void addScanData_slot(JSONObject jsonObject) {
         String query = "INSERT INTO scanHistory (scanResult, engineResults, scanDate) VALUES (?, ?, ?)";
         try (Connection connection = this.connection();
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
@@ -79,12 +76,47 @@ public class DBManager extends Thread {
             preparedStatement.setInt(3, (Integer) jsonObject.get("scanDate"));
 
             boolean queryResult = preparedStatement.execute();
-            preparedStatement.close();
+            connection.close();
 
-            return queryResult;
+            this.addScanDataDone_signal.emit(queryResult);
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return false;
+        this.addScanDataDone_signal.emit(false);
+    }
+
+    /**
+     * @param lastX > 0 number, shows how many previous scan will returned
+     * @return scan result json / NULL if cannot get the data
+     */
+    private void getLastXScan_slot(int lastX) {
+        JSONArray jsonArray = new JSONArray();
+
+        String query = "SELECT scanResult, engineResults, scanDate FROM scanHistory ORDER BY id DESC LIMIT ?";
+        try (Connection connection = this.connection();
+             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            if (lastX > 0) {
+                preparedStatement.setInt(1, lastX);
+            }
+
+            ResultSet queryResult = preparedStatement.executeQuery();
+
+            while (queryResult.next()) {
+                JSONObject data = new JSONObject();
+                int scanResult = queryResult.getInt("scanResult");
+                JSONObject engineResults = (JSONObject) queryResult.getObject("engineResults");
+                int scanDate = queryResult.getInt("scanDate");
+                data.put("scanResult", scanResult);
+                data.put("engineResults", engineResults);
+                data.put("scanDate", scanDate);
+                jsonArray.add(data);
+            }
+
+            this.getLastXScanDone_signal.emit(jsonArray);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        this.getLastXScanDone_signal.emit(null);
     }
 }
