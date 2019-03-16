@@ -3,6 +3,7 @@ package com.company;
 
 import com.github.msteinbeck.sig4j.signal.Signal1;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
@@ -11,7 +12,9 @@ public class WorkerThread extends Thread {
     private final UUID id;
     private final String enginePath;
     private final List<String> paramList;
-    final ProcessBuilder process;
+    final ProcessBuilder processBuilder;
+    private Process process;
+    private Thread thread = new Thread();
 
     private final Signal1<String> signal1 = new Signal1<>();
 
@@ -20,11 +23,25 @@ public class WorkerThread extends Thread {
         this.id = id;
         this.paramList = paramList;
 
-        process = new ProcessBuilder(enginePath.toString(),paramList.get(0).toString(),paramList.get(1).toString());
+        processBuilder = new ProcessBuilder(enginePath, paramList.get(0), paramList.get(1));
         this.signal1.connect(this::processDone_slot);
+
     }
 
     private void processDone_slot(String s) {
-
+        String tempString = process.getOutputStream().toString();
     }
+
+    public void run() {
+        thread.run();
+    }
+
+    public void startWorker_slot() {
+        try {
+            process = processBuilder.start();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 }
