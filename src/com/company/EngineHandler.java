@@ -2,47 +2,43 @@ package com.company;
 
 import com.github.msteinbeck.sig4j.Type;
 import com.github.msteinbeck.sig4j.signal.Signal2;
-import com.github.msteinbeck.sig4j.slot.Slot2;
-import com.github.msteinbeck.sig4j.slot.Slot3;
 import org.json.simple.JSONObject;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.Vector;
 
-public class EngineHandler {
+public class EngineHandler extends Thread {
 
-    private Signal2<UUID, JSONObject> scanComlete_signal = new Signal2<>();
-    private Signal2<UUID, String> newTask_sinal = new Signal2<>();
-
-    private Slot2<UUID, JSONObject> handleEngineResult_slot;
-    private Slot3<String, String, String> addNewEngine_slot;
-    private Slot2<UUID, String> handleNewTask_slot;
-
+    private Signal2<UUID, JSONObject> scanComplete_signal;
+    private Signal2<UUID, String> newTask_signal;
 
     private Map<Integer, Engine> engineList;
     private Map<String, Integer> engineNameList;
-    private Vector<Integer> resultMap;
 
-    int engineCount = 0;
-    Thread thread;
+    private int engineCount = 0;
 
 
     public EngineHandler() {
+        scanComplete_signal = new Signal2<>();
+        newTask_signal = new Signal2<>();
+        engineList = new HashMap<>();
+        engineNameList = new HashMap<>();
     }
 
+    @Override
     public void run() {
-        thread.run();
+        super.run();
     }
 
-    public void handlerEngineResult_solt(UUID uuid, JSONObject reuslt) {
-
-        scanComlete_signal.emit(uuid,reuslt);
+    public void handleEngineResult_slot(UUID uuid, JSONObject result) {
+        scanComplete_signal.emit(uuid,result);
     }
 
     public void handlerNewTask_slot(UUID uuid, String file) {
         if (!file.isEmpty()) {
-            newTask_sinal.emit(uuid,file);
+            newTask_signal.emit(uuid,file);
         }
     }
 
@@ -61,7 +57,7 @@ public class EngineHandler {
     public void addNewEngine_slot(String enginePath, String scanParameters, String engineName) {
         Engine engine = new Engine(engineCount, enginePath, scanParameters);
         engine.engineResult_signal.connect(this::handleEngineResult_slot, Type.QUEUED);
-        this.newTask_sinal.connect(engine::addNewWorker_slot);
+        this.newTask_signal.connect(engine::addNewWorker_slot);
 
         engineList.put(engineCount,engine);
         engineNameList.put(engineName, engineCount++);

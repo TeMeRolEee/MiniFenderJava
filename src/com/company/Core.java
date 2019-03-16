@@ -1,6 +1,8 @@
 package com.company;
 
+import com.github.msteinbeck.sig4j.signal.Signal0;
 import com.github.msteinbeck.sig4j.signal.Signal1;
+import com.github.msteinbeck.sig4j.signal.Signal2;
 import netscape.javascript.JSObject;
 import org.ini4j.Ini;
 import org.json.simple.JSONObject;
@@ -12,11 +14,11 @@ import java.util.*;
 
 public class Core extends Thread {
     private Signal1<List<String>> addNewEngine_signal;
-    private Signal1<Map<UUID, String>> startNewScanTask_signal;
-    private Signal1<Integer> removeEngines_signal;
+    private Signal2<UUID, String> startNewScanTask_signal;
+    private Signal0 removeEngines_signal;
     private Signal1<UUID> startCalculateResult_signal;
 
-    private String rootDirectory;
+    private String rootDirectory = null;
     EngineHandler engineHandler;
     DBManager dbManager;
     CliHandler cliHandler;
@@ -36,12 +38,12 @@ public class Core extends Thread {
             engineHandler = new EngineHandler();
             dbManager = new DBManager();
             cliHandler = new CliHandler();
-            startNewScanTask_signal = new Signal1<>();
-            removeEngines_signal = new Signal1<>();
+            startNewScanTask_signal = new Signal2<>();
+            removeEngines_signal = new Signal0();
             startCalculateResult_signal = new Signal1<>();
 
             startCalculateResult_signal.connect(this::calculateResult_slot);
-            //startNewScanTask_signal.connect();
+            startNewScanTask_signal.connect(engineHandler::handlerNewTask_slot);
 
             if (!dbManager.init(rootDirectory + "\\db\\scanHistoryDB.sqlite")) {
                 return false;
