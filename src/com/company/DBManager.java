@@ -1,12 +1,25 @@
 package com.company;
 
+import com.github.msteinbeck.sig4j.signal.Signal1;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONValue;
+import org.json.simple.parser.ParseException;
+import org.json.simple.parser.JSONParser;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Map;
+import java.util.UUID;
 
 public class DBManager extends Thread {
-    private String url;
+    @Override
+    public void run() {
+        super.run();
+    }
+
 
     /**
      * @return returns the connection if the url variable in the class is properly set up
@@ -22,6 +35,8 @@ public class DBManager extends Thread {
         return conn;
     }
 
+    private String url;
+
     /**
      * @param url example: "C://sqlite/db/test.db"
      * @return TRUE if init was successful / FALSE if init was unsuccessful
@@ -32,12 +47,15 @@ public class DBManager extends Thread {
             String query = "CREATE TABLE IF NOT EXISTS \"scanHistory\" ( `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE, `scanResult` INTEGER NOT NULL DEFAULT 0, `engineResults` TEXT NOT NULL, `scanDate` INTEGER NOT NULL )";
             try (Connection connection = this.connection();
                  PreparedStatement preparedStatement = connection.prepareStatement(query)) {
-                preparedStatement.execute();
+
+                boolean queryResult = preparedStatement.execute();
+                preparedStatement.close();
+
+                return queryResult;
             } catch (SQLException e) {
                 e.printStackTrace();
             }
         }
-
         return false;
     }
 
@@ -50,5 +68,23 @@ public class DBManager extends Thread {
 
     public String getUrl() {
         return url;
+    }
+
+    public boolean addScanData(JSONObject jsonObject) throws ParseException {
+        String query = "INSERT INTO scanHistory (scanResult, engineResults, scanDate) VALUES (?, ?, ?)";
+        try (Connection connection = this.connection();
+             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setInt(1, (Integer) jsonObject.get("scanResult"));
+            preparedStatement.setString(2, jsonObject.get("engineResults").toString());
+            preparedStatement.setInt(3, (Integer) jsonObject.get("scanDate"));
+
+            boolean queryResult = preparedStatement.execute();
+            preparedStatement.close();
+
+            return queryResult;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }
