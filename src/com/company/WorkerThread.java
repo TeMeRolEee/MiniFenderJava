@@ -2,21 +2,28 @@ package com.company;
 
 
 import com.github.msteinbeck.sig4j.signal.Signal1;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 public class WorkerThread extends Thread {
 
     private final UUID id;
     private final String enginePath;
     private final List<String> paramList;
+
     final ProcessBuilder processBuilder;
     private Process process;
     private Thread thread = new Thread();
 
-    private final Signal1<String> signal1 = new Signal1<>();
+    private final Signal1<String> processDone_signal = new Signal1<>();
+    protected final Signal1<String> processStart_signal = new Signal1<>();
+    protected final Signal1<JSONObject> processFinished_signal = new Signal1<>();
 
     public WorkerThread(UUID id, String enginePath, List<String> paramList) {
         this.enginePath = enginePath;
@@ -24,24 +31,38 @@ public class WorkerThread extends Thread {
         this.paramList = paramList;
 
         processBuilder = new ProcessBuilder(enginePath, paramList.get(0), paramList.get(1));
-        this.signal1.connect(this::processDone_slot);
+        this.processDone_signal.connect(this::processDone_slot);
 
+        this.processStart_signal.connect(this::startWorker_slot);
     }
 
     private void processDone_slot(String s) {
         String tempString = process.getOutputStream().toString();
+        JSONObject jsObject = null;
+
+        JSONParser jsonParser = new JSONParser();
+        try {
+            jsObject = (JSONObject) jsonParser.parse(tempString);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+        this.processFinished_signal.emit(jsObject);
     }
 
     public void run() {
         thread.run();
     }
 
-    public void startWorker_slot() {
+    private void startWorker_slot(String s) {
         try {
             process = processBuilder.start();
-        } catch (IOException e) {
+            process.waitFor(500, TimeUnit.MILLISECONDS);
+            processDone_signal.emit("");
+        } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
+
     }
 
 }
