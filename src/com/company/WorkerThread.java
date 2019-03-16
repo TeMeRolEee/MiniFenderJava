@@ -2,13 +2,13 @@ package com.company;
 
 
 import com.github.msteinbeck.sig4j.signal.Signal1;
+import com.github.msteinbeck.sig4j.signal.Signal2;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -24,7 +24,7 @@ public class WorkerThread extends Thread {
 
     private final Signal1<Integer> processDone_signal = new Signal1<>();
     protected final Signal1<Integer> processStart_signal = new Signal1<>();
-    protected final Signal1<Map<UUID,JSONObject>> processFinished_signal = new Signal1<>();
+    protected final Signal2<UUID,JSONObject> processFinished_signal = new Signal2<>();
 
     public WorkerThread(UUID id, String enginePath, List<String> paramList) {
         this.enginePath = enginePath;
@@ -47,9 +47,8 @@ public class WorkerThread extends Thread {
         } catch (ParseException e) {
             e.printStackTrace();
         }
-        Map<UUID,JSONObject>  map = null;
-        map.put(id, jsObject);
-        this.processFinished_signal.emit(map);
+
+        this.processFinished_signal.emit(id, jsObject);
     }
 
     public void run() {
