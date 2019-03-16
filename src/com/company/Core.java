@@ -46,8 +46,13 @@ public class Core extends Thread {
             if (!dbManager.init(rootDirectory + "\\db\\scanHistoryDB.sqlite")) {
                 return false;
             }
+            dbManager.start();
 
-            
+            readSettings(rootDirectory + "\\settings\\settings.ini");
+
+            cliHandler.init();
+            cliHandler.newTask_signal.connect(this::handleNewTask_slot);
+            cliHandler.start();
 
             return true;
         }
@@ -72,5 +77,9 @@ public class Core extends Thread {
             }
 
         }
+    }
+
+    private void handleNewTask_slot(String filePath) {
+
     }
 }
