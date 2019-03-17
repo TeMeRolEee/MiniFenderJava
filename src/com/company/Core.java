@@ -4,10 +4,11 @@ import com.github.msteinbeck.sig4j.signal.Signal0;
 import com.github.msteinbeck.sig4j.signal.Signal1;
 import com.github.msteinbeck.sig4j.signal.Signal2;
 import com.github.msteinbeck.sig4j.signal.Signal3;
-import netscape.javascript.JSObject;
 import org.ini4j.Ini;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import java.io.File;
 import java.io.FileReader;
@@ -28,9 +29,33 @@ public class Core extends Thread {
 
     Map<UUID, JSONObject> scanMap;
 
-    private JSONObject calculateResult_slot(UUID uuid) {
+    private void calculateResult_slot(UUID uuid) {
+        JSONObject finalResult = scanMap.get(uuid);
+        int infectedCount = 0;
 
-        return null;
+        JSONArray engineResults = (JSONArray) scanMap.get(uuid).get("engineResults");
+
+        for (Object engineResult : engineResults) {
+            JSONObject temp = (JSONObject) engineResult;
+            JSONArray tempArray = (JSONArray) temp.get("scan_result");
+            JSONObject verdictObject = (JSONObject) tempArray.get(0);
+            int verdict = (int) verdictObject.get("verdict");
+            if (verdict == 1) {
+                infectedCount++;
+            }
+        }
+
+        if (infectedCount > 0) {
+            finalResult.put("scanResult", 1);
+        } else {
+            finalResult.put("scanResult", 0);
+        }
+
+        dbManager.addScanData_signal.emit(finalResult);
+
+        System.out.println(finalResult.toJSONString());
+
+        scanMap.remove(uuid);
     }
 
 
@@ -45,6 +70,7 @@ public class Core extends Thread {
             startNewScanTask_signal = new Signal2<>();
             removeEngines_signal = new Signal0();
             startCalculateResult_signal = new Signal1<>();
+            engineHandler.scanComplete_signal.connect(this::handleEngineResults_slot);
 
             startCalculateResult_signal.connect(this::calculateResult_slot);
             startNewScanTask_signal.connect(engineHandler::handlerNewTask_slot);
@@ -67,6 +93,19 @@ public class Core extends Thread {
         }
 
         return false;
+    }
+
+    private void handleEngineResults_slot(UUID uuid, JSONObject jsonObject) {
+        if (scanMap.containsKey(uuid)) {
+            JSONArray temp = (JSONArray) scanMap.get(uuid).get("engineResults");
+
+            temp.add(jsonObject);
+            scanMap.get(uuid).replace("engineResults", temp);
+
+            if (temp.size() == engineHandler.getEngineCount()) {
+                startCalculateResult_signal.emit(uuid);
+            }
+        }
     }
 
     private boolean readSettings(String filePath) {

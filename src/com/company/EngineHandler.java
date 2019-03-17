@@ -11,7 +11,7 @@ import java.util.Vector;
 
 public class EngineHandler extends Thread {
 
-    private Signal2<UUID, JSONObject> scanComplete_signal;
+    protected Signal2<UUID, JSONObject> scanComplete_signal;
     private Signal2<UUID, String> newTask_signal;
 
     private Map<Integer, Engine> engineList;
