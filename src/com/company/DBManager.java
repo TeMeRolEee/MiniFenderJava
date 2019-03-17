@@ -4,7 +4,11 @@ import com.github.msteinbeck.sig4j.signal.Signal1;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.ResultSet;
+import java.sql.PreparedStatement;
 
 public class DBManager extends Thread {
     protected Signal1<Integer> getLastXScan_signal;
@@ -12,6 +16,8 @@ public class DBManager extends Thread {
 
     protected Signal1<JSONObject> addScanData_signal;
     protected Signal1<Boolean> addScanDataDone_signal;
+
+    private String url;
 
     public DBManager() {
         getLastXScan_signal = new Signal1<>();
@@ -43,8 +49,6 @@ public class DBManager extends Thread {
         return conn;
     }
 
-    private String url;
-
     /**
      * @param url example: "C://sqlite/db/test.db"
      * @return TRUE if init was successful / FALSE if init was unsuccessful
@@ -55,7 +59,6 @@ public class DBManager extends Thread {
             String query = "CREATE TABLE IF NOT EXISTS \"scanHistory\" ( `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE, `scanResult` INTEGER NOT NULL DEFAULT 0, `engineResults` TEXT NOT NULL, `scanDate` INTEGER NOT NULL )";
             try (Connection connection = this.connection();
                  PreparedStatement preparedStatement = connection.prepareStatement(query)) {
-
                 boolean queryResult = preparedStatement.execute();
                 connection.close();
 

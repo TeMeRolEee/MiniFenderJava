@@ -10,5 +10,6 @@
     <orderEntry type="library" name="sig4j-1.0.1" level="project" />
     <orderEntry type="library" name="json-simple-1.1.1" level="project" />
     <orderEntry type="library" name="ini4j-0.5.4" level="project" />
+    <orderEntry type="library" name="sqlite-jdbc-3.27.2" level="project" />
   </component>
 </module>
