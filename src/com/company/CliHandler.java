@@ -2,7 +2,9 @@ package com.company;
 
 import com.github.msteinbeck.sig4j.signal.Signal0;
 import com.github.msteinbeck.sig4j.signal.Signal1;
-import com.github.msteinbeck.sig4j.slot.Slot0;
+
+import java.util.Scanner;
+
 
 public class CliHandler extends Thread {
     protected Signal1<String> newTask_signal;
@@ -18,9 +20,10 @@ public class CliHandler extends Thread {
 
     @Override
     public void run() {
+        Scanner scanner = new Scanner(System.in);
         while (!stopCli) {
             System.out.println("Waiting for input...");
-            newTask_signal.emit(System.in.toString().trim());
+            newTask_signal.emit(scanner.nextLine());
         }
         super.run();
     }

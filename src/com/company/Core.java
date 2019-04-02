@@ -5,6 +5,7 @@ import com.github.msteinbeck.sig4j.signal.Signal1;
 import com.github.msteinbeck.sig4j.signal.Signal2;
 import com.github.msteinbeck.sig4j.signal.Signal3;
 import org.ini4j.Ini;
+import org.ini4j.Profile;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -51,7 +52,7 @@ public class Core extends Thread {
             finalResult.put("scanResult", 0);
         }
 
-        dbManager.addScanData_signal.emit(finalResult);
+        //dbManager.addScanData_signal.emit(finalResult);
 
         System.out.println(finalResult.toJSONString());
 
@@ -61,11 +62,12 @@ public class Core extends Thread {
 
     boolean init(String rootDirectory) {
         if (!rootDirectory.isEmpty()) {
+            System.out.println("Not empty");
             this.rootDirectory = rootDirectory;
 
             addNewEngine_signal = new Signal3<>();
             engineHandler = new EngineHandler();
-            dbManager = new DBManager();
+            //dbManager = new DBManager();
             cliHandler = new CliHandler();
             startNewScanTask_signal = new Signal2<>();
             removeEngines_signal = new Signal0();
@@ -75,13 +77,14 @@ public class Core extends Thread {
             startCalculateResult_signal.connect(this::calculateResult_slot);
             startNewScanTask_signal.connect(engineHandler::handlerNewTask_slot);
 
-            dbManager.start();
-            if (!dbManager.init(rootDirectory + "\\db\\scanHistoryDB.sqlite")) {
+            //dbManager.start();
+            /*if (!dbManager.init(rootDirectory + "\\db\\scanHistoryDB.sqlite")) {
                 dbManager.interrupt();
                 return false;
-            }
+            }*/
 
             if (!readSettings(rootDirectory + "\\settings\\settings.ini")) {
+                System.out.println("[CORE]\t ReadSettings FALSE");
                 return false;
             }
 
@@ -120,8 +123,10 @@ public class Core extends Thread {
 
         for (int i = 0; i < strings.size(); i++) {
             String key = (String) strings.toArray()[i];
-            List<String> childrenNames = Arrays.asList(ini.get(key).childrenNames());
-            if (childrenNames.contains("path") && childrenNames.contains("scan_parameter")) {
+            List<Profile.Section> childrenNames = ini.getAll(strings.toArray()[i]);
+            //System.out.println(childrenNames.get(0).get("path"));
+            //System.out.println(childrenNames.contains("path") + " " + childrenNames.contains("scan_parameter") + " " + Arrays.toString(strings.toArray()));
+            if (childrenNames.get(0).get("path")!= null && childrenNames.get(0).get("scan_parameter") != null) {
                 String path = "";
                 String scanParameter = "";
                 for (int j = 0; j < childrenNames.size(); j++) {
@@ -138,7 +143,7 @@ public class Core extends Thread {
                 badEngineCount++;
             }
         }
-
+        System.out.println(badEngineCount + " " + strings.size());
         return badEngineCount != strings.size();
     }
 

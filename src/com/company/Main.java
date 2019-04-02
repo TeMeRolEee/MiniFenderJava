@@ -14,6 +14,10 @@ public class Main {
     private void start() {
         core = new Core();
         core.start();
-        core.init(System.getProperty("user.dir"));
+        if (core.init(System.getProperty("user.dir"))) {
+            System.out.println("TRUE");
+        } else {
+            System.out.println("FALSE");
+        }
     }
 }

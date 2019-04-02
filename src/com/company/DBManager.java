@@ -4,12 +4,17 @@ import com.github.msteinbeck.sig4j.signal.Signal1;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
+import org.sqlite.SQLiteConnection;
+import org.sqlite.jdbc4.JDBC4Connection;
+import org.sqlite.jdbc4.JDBC4PreparedStatement;
+import org.sqlite.jdbc4.JDBC4ResultSet;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.ResultSet;
 import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
+@SuppressWarnings("Duplicates")
 public class DBManager extends Thread {
     protected Signal1<Integer> getLastXScan_signal;
     protected Signal1<JSONArray> getLastXScanDone_signal;
@@ -38,10 +43,10 @@ public class DBManager extends Thread {
     /**
      * @return returns the connection if the url variable in the class is properly set up
      */
-    private Connection connection() {
-        Connection conn = null;
+    private JDBC4Connection connection() {
+        org.sqlite.jdbc4.JDBC4Connection conn = null;
         try {
-            conn = DriverManager.getConnection(url);
+            conn = (JDBC4Connection) DriverManager.getConnection(url);
         } catch (SQLException exc) {
             System.out.println(exc.getMessage());
         }
@@ -57,8 +62,15 @@ public class DBManager extends Thread {
         if (!url.isEmpty()) {
             this.url = "jdbc:sqlite:" + url;
             String query = "CREATE TABLE IF NOT EXISTS \"scanHistory\" ( `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE, `scanResult` INTEGER NOT NULL DEFAULT 0, `engineResults` TEXT NOT NULL, `scanDate` INTEGER NOT NULL )";
-            try (Connection connection = this.connection();
-                 PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            SQLiteConnection connection = this.connection();
+            PreparedStatement preparedStatement = null;
+            try {
+                preparedStatement = new JDBC4PreparedStatement(connection, query);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+            try {
                 boolean queryResult = preparedStatement.execute();
                 connection.close();
 
@@ -72,8 +84,14 @@ public class DBManager extends Thread {
 
     private void addScanData_slot(JSONObject jsonObject) {
         String query = "INSERT INTO scanHistory (scanResult, engineResults, scanDate) VALUES (?, ?, ?)";
-        try (Connection connection = this.connection();
-             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+        Connection connection = this.connection();
+        PreparedStatement preparedStatement = null;
+        try {
+            preparedStatement = connection.prepareStatement(query);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        try {
             preparedStatement.setInt(1, (Integer) jsonObject.get("scanResult"));
             preparedStatement.setString(2, jsonObject.get("engineResults").toString());
             preparedStatement.setInt(3, (Integer) jsonObject.get("scanDate"));
@@ -96,13 +114,19 @@ public class DBManager extends Thread {
         JSONArray jsonArray = new JSONArray();
 
         String query = "SELECT scanResult, engineResults, scanDate FROM scanHistory ORDER BY id DESC LIMIT ?";
-        try (Connection connection = this.connection();
-             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+        Connection connection = this.connection();
+        PreparedStatement preparedStatement = null;
+        try {
+            preparedStatement = connection.prepareStatement(query);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        try {
             if (lastX > 0) {
                 preparedStatement.setInt(1, lastX);
             }
 
-            ResultSet queryResult = preparedStatement.executeQuery();
+            JDBC4ResultSet queryResult = (JDBC4ResultSet) preparedStatement.executeQuery();
 
             while (queryResult.next()) {
                 JSONObject data = new JSONObject();
