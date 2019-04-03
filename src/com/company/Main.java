@@ -5,7 +5,7 @@ import java.io.File;
 
 public class Main {
 
-    Core core;
+    private Core core;
 
     public static void main(String[] args) {
         new Main().start();
@@ -14,10 +14,6 @@ public class Main {
     private void start() {
         core = new Core();
         core.start();
-        if (core.init(System.getProperty("user.dir"))) {
-            System.out.println("TRUE");
-        } else {
-            System.out.println("FALSE");
-        }
+        core.init(System.getProperty("user.dir"));
     }
 }

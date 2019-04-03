@@ -4,15 +4,7 @@ import com.github.msteinbeck.sig4j.signal.Signal1;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
-import org.sqlite.SQLiteConnection;
-import org.sqlite.jdbc4.JDBC4Connection;
-import org.sqlite.jdbc4.JDBC4PreparedStatement;
-import org.sqlite.jdbc4.JDBC4ResultSet;
-
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.*;
 
 @SuppressWarnings("Duplicates")
 public class DBManager extends Thread {
@@ -39,14 +31,14 @@ public class DBManager extends Thread {
         super.run();
     }
 
-
     /**
      * @return returns the connection if the url variable in the class is properly set up
      */
-    private JDBC4Connection connection() {
-        org.sqlite.jdbc4.JDBC4Connection conn = null;
+    private Connection connection() {
+        Connection conn = null;
         try {
-            conn = (JDBC4Connection) DriverManager.getConnection(url);
+            System.out.println(url);
+            conn = DriverManager.getConnection(url);
         } catch (SQLException exc) {
             System.out.println(exc.getMessage());
         }
@@ -62,19 +54,11 @@ public class DBManager extends Thread {
         if (!url.isEmpty()) {
             this.url = "jdbc:sqlite:" + url;
             String query = "CREATE TABLE IF NOT EXISTS \"scanHistory\" ( `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE, `scanResult` INTEGER NOT NULL DEFAULT 0, `engineResults` TEXT NOT NULL, `scanDate` INTEGER NOT NULL )";
-            SQLiteConnection connection = this.connection();
-            PreparedStatement preparedStatement = null;
-            try {
-                preparedStatement = new JDBC4PreparedStatement(connection, query);
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
 
-            try {
-                boolean queryResult = preparedStatement.execute();
-                connection.close();
-
-                return queryResult;
+            try (Connection connection = this.connection();
+                 Statement statement = connection.createStatement()) {
+                System.out.println("[DBManager]\t Initializing db");
+                return statement.executeUpdate(query) == 0;
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -84,26 +68,16 @@ public class DBManager extends Thread {
 
     private void addScanData_slot(JSONObject jsonObject) {
         String query = "INSERT INTO scanHistory (scanResult, engineResults, scanDate) VALUES (?, ?, ?)";
-        Connection connection = this.connection();
-        PreparedStatement preparedStatement = null;
-        try {
-            preparedStatement = connection.prepareStatement(query);
+        try (Connection connection = this.connection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setInt(1, (Integer) jsonObject.get("scanResult"));
+            statement.setString(2, jsonObject.get("engineResults").toString());
+            statement.setInt(3, (Integer) jsonObject.get("scanDate"));
+
+            this.addScanDataDone_signal.emit(statement.execute(query));
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        try {
-            preparedStatement.setInt(1, (Integer) jsonObject.get("scanResult"));
-            preparedStatement.setString(2, jsonObject.get("engineResults").toString());
-            preparedStatement.setInt(3, (Integer) jsonObject.get("scanDate"));
-
-            boolean queryResult = preparedStatement.execute();
-            connection.close();
-
-            this.addScanDataDone_signal.emit(queryResult);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        this.addScanDataDone_signal.emit(false);
     }
 
     /**
@@ -114,36 +88,30 @@ public class DBManager extends Thread {
         JSONArray jsonArray = new JSONArray();
 
         String query = "SELECT scanResult, engineResults, scanDate FROM scanHistory ORDER BY id DESC LIMIT ?";
-        Connection connection = this.connection();
-        PreparedStatement preparedStatement = null;
-        try {
-            preparedStatement = connection.prepareStatement(query);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        try {
-            if (lastX > 0) {
-                preparedStatement.setInt(1, lastX);
-            }
+        try (Connection connection = this.connection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setInt(1, lastX);
+            ResultSet resultSet = statement.executeQuery();
 
-            JDBC4ResultSet queryResult = (JDBC4ResultSet) preparedStatement.executeQuery();
-
-            while (queryResult.next()) {
+            while (resultSet.next()) {
                 JSONObject data = new JSONObject();
-                int scanResult = queryResult.getInt("scanResult");
-                JSONObject engineResults = (JSONObject) queryResult.getObject("engineResults");
-                int scanDate = queryResult.getInt("scanDate");
+                JSONObject engineResults = (JSONObject) resultSet.getObject("engineResults");
+
+                int scanResult = resultSet.getInt("scanResult");
+                int scanDate = resultSet.getInt("scanDate");
+
                 data.put("scanResult", scanResult);
                 data.put("engineResults", engineResults);
                 data.put("scanDate", scanDate);
+
                 jsonArray.add(data);
             }
 
             this.getLastXScanDone_signal.emit(jsonArray);
-
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
         this.getLastXScanDone_signal.emit(null);
     }
 }

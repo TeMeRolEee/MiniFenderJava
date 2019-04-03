@@ -22,7 +22,7 @@ public class CliHandler extends Thread {
     public void run() {
         Scanner scanner = new Scanner(System.in);
         while (!stopCli) {
-            System.out.println("Waiting for input...");
+            //System.out.println("Waiting for input...");
             newTask_signal.emit(scanner.nextLine());
         }
         super.run();

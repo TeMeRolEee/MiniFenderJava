@@ -8,8 +8,6 @@ import org.ini4j.Ini;
 import org.ini4j.Profile;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
 import java.io.File;
 import java.io.FileReader;
@@ -52,7 +50,7 @@ public class Core extends Thread {
             finalResult.put("scanResult", 0);
         }
 
-        //dbManager.addScanData_signal.emit(finalResult);
+        dbManager.addScanData_signal.emit(finalResult);
 
         System.out.println(finalResult.toJSONString());
 
@@ -62,12 +60,11 @@ public class Core extends Thread {
 
     boolean init(String rootDirectory) {
         if (!rootDirectory.isEmpty()) {
-            System.out.println("Not empty");
             this.rootDirectory = rootDirectory;
 
             addNewEngine_signal = new Signal3<>();
             engineHandler = new EngineHandler();
-            //dbManager = new DBManager();
+            dbManager = new DBManager();
             cliHandler = new CliHandler();
             startNewScanTask_signal = new Signal2<>();
             removeEngines_signal = new Signal0();
@@ -77,14 +74,14 @@ public class Core extends Thread {
             startCalculateResult_signal.connect(this::calculateResult_slot);
             startNewScanTask_signal.connect(engineHandler::handlerNewTask_slot);
 
-            //dbManager.start();
-            /*if (!dbManager.init(rootDirectory + "\\db\\scanHistoryDB.sqlite")) {
+            dbManager.start();
+            if (!dbManager.init(rootDirectory + "\\db\\scanHistoryDB.sqlite")) {
                 dbManager.interrupt();
                 return false;
-            }*/
+            }
 
             if (!readSettings(rootDirectory + "\\settings\\settings.ini")) {
-                System.out.println("[CORE]\t ReadSettings FALSE");
+                //System.out.println("[CORE]\t ReadSettings FALSE");
                 return false;
             }
 
@@ -113,22 +110,24 @@ public class Core extends Thread {
 
     private boolean readSettings(String filePath) {
         Ini ini = new Ini();
+
         try {
             ini.load(new FileReader(filePath));
         } catch (IOException e) {
             e.printStackTrace();
         }
+
         Set<String> strings = ini.keySet();
         int badEngineCount = 0;
 
         for (int i = 0; i < strings.size(); i++) {
             String key = (String) strings.toArray()[i];
             List<Profile.Section> childrenNames = ini.getAll(strings.toArray()[i]);
-            //System.out.println(childrenNames.get(0).get("path"));
-            //System.out.println(childrenNames.contains("path") + " " + childrenNames.contains("scan_parameter") + " " + Arrays.toString(strings.toArray()));
+
             if (childrenNames.get(0).get("path")!= null && childrenNames.get(0).get("scan_parameter") != null) {
                 String path = "";
                 String scanParameter = "";
+
                 for (int j = 0; j < childrenNames.size(); j++) {
                     if (childrenNames.toArray()[j].toString().equals("path")) {
                         path = childrenNames.toArray()[j].toString();
@@ -138,12 +137,13 @@ public class Core extends Thread {
                         scanParameter = childrenNames.toArray()[j].toString();
                     }
                 }
+
                 addNewEngine_signal.emit(path, scanParameter, key);
             } else {
                 badEngineCount++;
             }
         }
-        System.out.println(badEngineCount + " " + strings.size());
+
         return badEngineCount != strings.size();
     }
 
@@ -160,7 +160,7 @@ public class Core extends Thread {
                 scanMap.put(uuid, initialData);
 
                 startNewScanTask_signal.emit(uuid, filePath);
-            } {
+            } else {
                 System.out.println("[ERROR]\t" + filePath + "<-- file does not exists!");
             }
         } else {
