@@ -5,10 +5,9 @@ import com.github.msteinbeck.sig4j.signal.Signal1;
 import com.github.msteinbeck.sig4j.signal.Signal2;
 import com.github.msteinbeck.sig4j.signal.Signal3;
 import org.ini4j.Ini;
+import org.ini4j.Profile;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
 import java.io.File;
 import java.io.FileReader;
@@ -82,6 +81,7 @@ public class Core extends Thread {
             }
 
             if (!readSettings(rootDirectory + "\\settings\\settings.ini")) {
+                //System.out.println("[CORE]\t ReadSettings FALSE");
                 return false;
             }
 
@@ -110,20 +110,24 @@ public class Core extends Thread {
 
     private boolean readSettings(String filePath) {
         Ini ini = new Ini();
+
         try {
             ini.load(new FileReader(filePath));
         } catch (IOException e) {
             e.printStackTrace();
         }
+
         Set<String> strings = ini.keySet();
         int badEngineCount = 0;
 
         for (int i = 0; i < strings.size(); i++) {
             String key = (String) strings.toArray()[i];
-            List<String> childrenNames = Arrays.asList(ini.get(key).childrenNames());
-            if (childrenNames.contains("path") && childrenNames.contains("scan_parameter")) {
+            List<Profile.Section> childrenNames = ini.getAll(strings.toArray()[i]);
+
+            if (childrenNames.get(0).get("path")!= null && childrenNames.get(0).get("scan_parameter") != null) {
                 String path = "";
                 String scanParameter = "";
+
                 for (int j = 0; j < childrenNames.size(); j++) {
                     if (childrenNames.toArray()[j].toString().equals("path")) {
                         path = childrenNames.toArray()[j].toString();
@@ -133,6 +137,7 @@ public class Core extends Thread {
                         scanParameter = childrenNames.toArray()[j].toString();
                     }
                 }
+
                 addNewEngine_signal.emit(path, scanParameter, key);
             } else {
                 badEngineCount++;
@@ -155,7 +160,7 @@ public class Core extends Thread {
                 scanMap.put(uuid, initialData);
 
                 startNewScanTask_signal.emit(uuid, filePath);
-            } {
+            } else {
                 System.out.println("[ERROR]\t" + filePath + "<-- file does not exists!");
             }
         } else {

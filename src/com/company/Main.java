@@ -5,7 +5,7 @@ import java.io.File;
 
 public class Main {
 
-    Core core;
+    private Core core;
 
     public static void main(String[] args) {
         new Main().start();
