@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="sig4j-1.0.1">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/src/com/company/plugin/sig4j-1.0.1.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
