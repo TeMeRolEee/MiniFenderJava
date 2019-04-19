@@ -1,11 +1,13 @@
 package com.company;
 
 import com.github.msteinbeck.sig4j.signal.Signal0;
-import com.github.msteinbeck.sig4j.signal.Signal1;
 import com.github.msteinbeck.sig4j.signal.Signal2;
 import org.json.simple.JSONObject;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public class Engine extends Thread {
 
@@ -31,7 +33,7 @@ public class Engine extends Thread {
 
     public void addNewWorker_slot(UUID uuid, String parameter) {
         if (!parameter.isEmpty()) {
-
+            System.out.println("Engine" + uuid.toString() + " " + parameter);
             List<String> paramList = new java.util.ArrayList<>();
             paramList.add(scanPath);
             paramList.add(parameter);

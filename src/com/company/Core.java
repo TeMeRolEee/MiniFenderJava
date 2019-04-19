@@ -26,7 +26,7 @@ public class Core extends Thread {
     private DBManager dbManager;
     private CliHandler cliHandler;
 
-    Map<UUID, JSONObject> scanMap;
+    Map<UUID, JSONObject> scanMap = new HashMap<>();
 
     private void calculateResult_slot(UUID uuid) {
         JSONObject finalResult = scanMap.get(uuid);
@@ -73,6 +73,7 @@ public class Core extends Thread {
 
             startCalculateResult_signal.connect(this::calculateResult_slot);
             startNewScanTask_signal.connect(engineHandler::handlerNewTask_slot);
+            addNewEngine_signal.connect(engineHandler::addNewEngine_slot);
 
             dbManager.start();
             if (!dbManager.init(rootDirectory + "\\db\\scanHistoryDB.sqlite")) {
@@ -127,18 +128,21 @@ public class Core extends Thread {
             if (childrenNames.get(0).get("path")!= null && childrenNames.get(0).get("scan_parameter") != null) {
                 String path = "";
                 String scanParameter = "";
-
-                for (int j = 0; j < childrenNames.size(); j++) {
-                    if (childrenNames.toArray()[j].toString().equals("path")) {
-                        path = childrenNames.toArray()[j].toString();
+                //System.out.println("[CORE]\t path:" + childrenNames.get(0).get("path"));
+                for (Profile.Section childrenName : childrenNames) {
+                    if (!childrenName.get("path").isEmpty()) {
+                        path = childrenName.get("path");
+                        //System.out.println("[CORE]\t path:" + childrenNames.get(j).get("path"));
                     }
 
-                    if (childrenNames.toArray()[j].toString().equals("scan_parameter")) {
-                        scanParameter = childrenNames.toArray()[j].toString();
+                    if (!childrenName.get("scan_parameter").isEmpty()) {
+                        scanParameter = childrenName.get("scan_parameter");
+                        //System.out.println("[CORE]\t scanParameter:" + scanParameter);
                     }
                 }
 
                 addNewEngine_signal.emit(path, scanParameter, key);
+
             } else {
                 badEngineCount++;
             }
@@ -148,7 +152,7 @@ public class Core extends Thread {
     }
 
     private void handleNewTask_slot(String filePath) {
-        if (filePath.isEmpty()) {
+        if (!filePath.isEmpty()) {
             File file = new File(filePath);
             if (file.exists()) {
                 UUID uuid = new UUID(file.hashCode(),file.hashCode());

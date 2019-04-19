@@ -39,6 +39,7 @@ public class EngineHandler extends Thread {
     public void handlerNewTask_slot(UUID uuid, String file) {
         if (!file.isEmpty()) {
             newTask_signal.emit(uuid,file);
+            System.out.println("EngineHandler " + file);
         }
     }
 
@@ -55,13 +56,13 @@ public class EngineHandler extends Thread {
     }
 
     public void addNewEngine_slot(String enginePath, String scanParameters, String engineName) {
-        Engine engine = new Engine(engineCount, enginePath, scanParameters);
-        engine.engineResult_signal.connect(this::handleEngineResult_slot, Type.QUEUED);
-        this.newTask_signal.connect(engine::addNewWorker_slot);
-
-        engineList.put(engineCount,engine);
+        engineList.put(engineCount, new Engine(engineCount, enginePath, scanParameters));
         engineNameList.put(engineName, engineCount++);
 
-        engine.start();
+        engineList.get(engineCount).engineResult_signal.connect(this::handleEngineResult_slot, Type.QUEUED);
+        this.newTask_signal.connect(engineList.get(engineCount)::addNewWorker_slot);
+
+        engineList.get(engineCount).start();
+        System.out.println("Engine " + engineName);
     }
 }
