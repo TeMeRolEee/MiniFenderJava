@@ -1,5 +1,6 @@
 package com.company;
 
+import com.github.msteinbeck.sig4j.Type;
 import com.github.msteinbeck.sig4j.signal.Signal0;
 import com.github.msteinbeck.sig4j.signal.Signal1;
 import com.github.msteinbeck.sig4j.signal.Signal2;
@@ -69,11 +70,11 @@ public class Core extends Thread {
             startNewScanTask_signal = new Signal2<>();
             removeEngines_signal = new Signal0();
             startCalculateResult_signal = new Signal1<>();
-            engineHandler.scanComplete_signal.connect(this::handleEngineResults_slot);
+            engineHandler.scanComplete_signal.connect(this::handleEngineResults_slot, Type.QUEUED);
 
-            startCalculateResult_signal.connect(this::calculateResult_slot);
-            startNewScanTask_signal.connect(engineHandler::handlerNewTask_slot);
-            addNewEngine_signal.connect(engineHandler::addNewEngine_slot);
+            startCalculateResult_signal.connect(this::calculateResult_slot, Type.QUEUED);
+            startNewScanTask_signal.connect(engineHandler::handlerNewTask_slot, Type.QUEUED);
+            addNewEngine_signal.connect(engineHandler::addNewEngine_slot, Type.QUEUED);
 
             dbManager.start();
             if (!dbManager.init(rootDirectory + "\\db\\scanHistoryDB.sqlite")) {
