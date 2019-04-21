@@ -30,17 +30,20 @@ public class Core extends Thread {
     Map<UUID, JSONObject> scanMap = new HashMap<>();
 
     private void calculateResult_slot(UUID uuid) {
-        JSONObject finalResult = scanMap.get(uuid);
+        JSONObject finalResult = new JSONObject();
         int infectedCount = 0;
-
+        //System.out.println("[CORE]\t Calculating has started");
         JSONArray engineResults = (JSONArray) scanMap.get(uuid).get("engineResults");
+        //System.out.println("[CORE]\t" + engineResults.size() + engineResults.toJSONString());
 
-        for (Object engineResult : engineResults) {
-            JSONObject temp = (JSONObject) engineResult;
+        for (int i = 0; i < engineResults.size(); i++) {
+            JSONObject temp = (JSONObject) engineResults.get(i);
+            //System.out.println("[CORE]\tTEMP:" + temp.toJSONString());
             JSONArray tempArray = (JSONArray) temp.get("scan_result");
             JSONObject verdictObject = (JSONObject) tempArray.get(0);
-            int verdict = (int) verdictObject.get("verdict");
-            if (verdict == 1) {
+            //System.out.println("[CORE]\tVERDICT:" + verdictObject.toJSONString());
+            //System.out.println("[CORE]\tVERDICT:" + verdictObject.get("verdict").toString());
+            if (verdictObject.get("verdict").toString().equals("1")) {
                 infectedCount++;
             }
         }
@@ -50,12 +53,13 @@ public class Core extends Thread {
         } else {
             finalResult.put("scanResult", 0);
         }
-
-        dbManager.addScanData_signal.emit(finalResult);
+        finalResult.put("engineResults", scanMap.get(uuid));
 
         System.out.println(finalResult.toJSONString());
 
         scanMap.remove(uuid);
+
+        dbManager.addScanData_signal.emit(finalResult);
     }
 
 
@@ -98,6 +102,7 @@ public class Core extends Thread {
     }
 
     private void handleEngineResults_slot(UUID uuid, JSONObject jsonObject) {
+        //System.out.println("[CORE]\t" + uuid.toString());
         if (scanMap.containsKey(uuid)) {
             JSONArray temp = (JSONArray) scanMap.get(uuid).get("engineResults");
 
@@ -105,6 +110,7 @@ public class Core extends Thread {
             scanMap.get(uuid).replace("engineResults", temp);
 
             if (temp.size() == engineHandler.getEngineCount()) {
+                //System.out.println("[CORE]\tEQUAL");
                 startCalculateResult_signal.emit(uuid);
             }
         }

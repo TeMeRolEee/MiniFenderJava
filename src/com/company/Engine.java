@@ -47,7 +47,7 @@ public class Engine extends Thread {
 
     public void handlerProcessDone_slot(UUID uuid, JSONObject jsonObject) {
         if (!jsonObject.isEmpty()) {
-            System.out.println("[Engine_" + id + "]\t" + uuid.toString());
+            //System.out.println("[Engine_" + id + "]\t" + uuid.toString());
             engineResult_signal.emit(uuid, jsonObject);
             engineProcesses.get(uuid).interrupt();
             engineProcesses.remove(uuid);
