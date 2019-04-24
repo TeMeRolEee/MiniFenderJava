@@ -8,7 +8,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -33,17 +33,29 @@ public class WorkerThread extends Thread {
 
         processBuilder = new ProcessBuilder(enginePath, paramList.get(0), paramList.get(1));
         this.processDone_signal.connect(this::processDone_slot);
-
         this.processStart_signal.connect(this::startWorker_slot);
     }
 
     private void processDone_slot() {
-        String tempString = process.getOutputStream().toString();
+        String line;
+        StringBuilder tempString = new StringBuilder();
+        BufferedReader input = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        try {
+            while ((line = input.readLine()) != null) {
+                //System.out.println(line);
+                tempString.append(line);
+            }
+            input.close();
+        }catch (Exception e) {
+            e.printStackTrace();
+        }
+
         JSONObject jsObject = null;
 
         JSONParser jsonParser = new JSONParser();
         try {
-            jsObject = (JSONObject) jsonParser.parse(tempString);
+            //System.out.println(tempString);
+            jsObject = (JSONObject) jsonParser.parse(tempString.toString());
         } catch (ParseException e) {
             e.printStackTrace();
         }
@@ -58,7 +70,8 @@ public class WorkerThread extends Thread {
     private void startWorker_slot() {
         try {
             process = processBuilder.start();
-            process.waitFor(500, TimeUnit.MILLISECONDS);
+            //System.out.println(process.isAlive());
+            process.waitFor();
             processDone_signal.emit();
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();

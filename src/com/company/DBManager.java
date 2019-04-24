@@ -37,7 +37,7 @@ public class DBManager extends Thread {
     private Connection connection() {
         Connection conn = null;
         try {
-            System.out.println(url);
+            //System.out.println(url);
             conn = DriverManager.getConnection(url);
         } catch (SQLException exc) {
             System.out.println(exc.getMessage());
@@ -57,7 +57,7 @@ public class DBManager extends Thread {
 
             try (Connection connection = this.connection();
                  Statement statement = connection.createStatement()) {
-                System.out.println("[DBManager]\t Initializing db");
+                //System.out.println("[DBManager]\t Initializing db");
                 return statement.executeUpdate(query) == 0;
             } catch (SQLException e) {
                 e.printStackTrace();

@@ -1,7 +1,7 @@
 package com.company;
 
+import com.github.msteinbeck.sig4j.Type;
 import com.github.msteinbeck.sig4j.signal.Signal0;
-import com.github.msteinbeck.sig4j.signal.Signal1;
 import com.github.msteinbeck.sig4j.signal.Signal2;
 import org.json.simple.JSONObject;
 
@@ -31,8 +31,8 @@ public class Engine extends Thread {
 
     public void addNewWorker_slot(UUID uuid, String parameter) {
         if (!parameter.isEmpty()) {
-
-            List<String> paramList = new java.util.ArrayList<>();
+            //System.out.println("Engine\t" + uuid.toString() + " " + parameter);
+            List<String> paramList = new ArrayList<>();
             paramList.add(scanPath);
             paramList.add(parameter);
 
@@ -40,13 +40,14 @@ public class Engine extends Thread {
 
             engineProcesses.put(uuid, workerThread);
             workerThread.start();
-            workerThread.processFinished_signal.connect(this::handlerProcessDone_slot);
+            workerThread.processFinished_signal.connect(this::handlerProcessDone_slot, Type.QUEUED);
             workerThread.processStart_signal.emit();
         }
     }
 
     public void handlerProcessDone_slot(UUID uuid, JSONObject jsonObject) {
         if (!jsonObject.isEmpty()) {
+            //System.out.println("[Engine_" + id + "]\t" + uuid.toString());
             engineResult_signal.emit(uuid, jsonObject);
             engineProcesses.get(uuid).interrupt();
             engineProcesses.remove(uuid);

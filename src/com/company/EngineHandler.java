@@ -7,7 +7,6 @@ import org.json.simple.JSONObject;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.Vector;
 
 public class EngineHandler extends Thread {
 
@@ -33,12 +32,14 @@ public class EngineHandler extends Thread {
     }
 
     public void handleEngineResult_slot(UUID uuid, JSONObject result) {
+        //System.out.println("[EngineHandler]\t" + uuid.toString());
         scanComplete_signal.emit(uuid,result);
     }
 
     public void handlerNewTask_slot(UUID uuid, String file) {
         if (!file.isEmpty()) {
             newTask_signal.emit(uuid,file);
+            //System.out.println("EngineHandler " + file);
         }
     }
 
@@ -56,12 +57,17 @@ public class EngineHandler extends Thread {
 
     public void addNewEngine_slot(String enginePath, String scanParameters, String engineName) {
         Engine engine = new Engine(engineCount, enginePath, scanParameters);
-        engine.engineResult_signal.connect(this::handleEngineResult_slot, Type.QUEUED);
-        this.newTask_signal.connect(engine::addNewWorker_slot);
-
-        engineList.put(engineCount,engine);
+        engineList.put(engineCount, engine);
         engineNameList.put(engineName, engineCount++);
 
+        try {
+            engine.engineResult_signal.connect(this::handleEngineResult_slot, Type.QUEUED);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        this.newTask_signal.connect(engine::addNewWorker_slot, Type.QUEUED);
+
         engine.start();
+        //System.out.println("Engine" + (engineCount-1) + " " + engineName);
     }
 }
