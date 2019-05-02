@@ -52,6 +52,7 @@ public class DBManager extends Thread {
      */
     public boolean init(String url) {
         if (!url.isEmpty()) {
+            //System.out.println("[DBManager]\t Initializing db" + url);
             this.url = "jdbc:sqlite:" + url;
             String query = "CREATE TABLE IF NOT EXISTS \"scanHistory\" ( `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE, `scanResult` INTEGER NOT NULL DEFAULT 0, `engineResults` TEXT NOT NULL, `scanDate` INTEGER NOT NULL )";
 

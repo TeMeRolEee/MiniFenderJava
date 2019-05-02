@@ -36,8 +36,8 @@ public class Core extends Thread {
         JSONArray engineResults = (JSONArray) scanMap.get(uuid).get("engineResults");
         //System.out.println("[CORE]\t" + engineResults.size() + engineResults.toJSONString());
 
-        for (int i = 0; i < engineResults.size(); i++) {
-            JSONObject temp = (JSONObject) engineResults.get(i);
+        for (Object engineResult : engineResults) {
+            JSONObject temp = (JSONObject) engineResult;
             //System.out.println("[CORE]\tTEMP:" + temp.toJSONString());
             JSONArray tempArray = (JSONArray) temp.get("scan_result");
             JSONObject verdictObject = (JSONObject) tempArray.get(0);
@@ -66,6 +66,8 @@ public class Core extends Thread {
     boolean init(String rootDirectory) {
         if (!rootDirectory.isEmpty()) {
             this.rootDirectory = rootDirectory;
+            new File(rootDirectory + "/settings").mkdirs();
+            new File(rootDirectory + "/db").mkdirs();
 
             addNewEngine_signal = new Signal3<>();
             engineHandler = new EngineHandler();
@@ -87,7 +89,6 @@ public class Core extends Thread {
             }
 
             if (!readSettings(rootDirectory + "\\settings\\settings.ini")) {
-                //System.out.println("[CORE]\t ReadSettings FALSE");
                 return false;
             }
 
@@ -102,7 +103,6 @@ public class Core extends Thread {
     }
 
     private void handleEngineResults_slot(UUID uuid, JSONObject jsonObject) {
-        //System.out.println("[CORE]\t" + uuid.toString());
         if (scanMap.containsKey(uuid)) {
             JSONArray temp = (JSONArray) scanMap.get(uuid).get("engineResults");
 
@@ -110,52 +110,56 @@ public class Core extends Thread {
             scanMap.get(uuid).replace("engineResults", temp);
 
             if (temp.size() == engineHandler.getEngineCount()) {
-                //System.out.println("[CORE]\tEQUAL");
                 startCalculateResult_signal.emit(uuid);
             }
         }
     }
 
     private boolean readSettings(String filePath) {
-        Ini ini = new Ini();
-
-        try {
-            ini.load(new FileReader(filePath));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        Set<String> strings = ini.keySet();
-        int badEngineCount = 0;
-
-        for (int i = 0; i < strings.size(); i++) {
-            String key = (String) strings.toArray()[i];
-            List<Profile.Section> childrenNames = ini.getAll(strings.toArray()[i]);
-
-            if (childrenNames.get(0).get("path")!= null && childrenNames.get(0).get("scan_parameter") != null) {
-                String path = "";
-                String scanParameter = "";
-                //System.out.println("[CORE]\t path:" + childrenNames.get(0).get("path"));
-                for (Profile.Section childrenName : childrenNames) {
-                    if (!childrenName.get("path").isEmpty()) {
-                        path = childrenName.get("path");
-                        //System.out.println("[CORE]\t path:" + childrenNames.get(j).get("path"));
-                    }
-
-                    if (!childrenName.get("scan_parameter").isEmpty()) {
-                        scanParameter = childrenName.get("scan_parameter");
-                        //System.out.println("[CORE]\t scanParameter:" + scanParameter);
-                    }
-                }
-
-                addNewEngine_signal.emit(path, scanParameter, key);
-
-            } else {
-                badEngineCount++;
+        if (new File(filePath).exists()) {
+            Ini ini = new Ini();
+            try {
+                ini.load(new FileReader(filePath));
+            } catch (IOException e) {
+                e.printStackTrace();
             }
+
+            Set<String> strings = ini.keySet();
+            int badEngineCount = 0;
+
+            for (int i = 0; i < strings.size(); i++) {
+                String key = (String) strings.toArray()[i];
+                List<Profile.Section> childrenNames = ini.getAll(strings.toArray()[i]);
+
+                if (childrenNames.get(0).get("path")!= null && childrenNames.get(0).get("scan_parameter") != null) {
+                    String path = "";
+                    String scanParameter = "";
+                    //System.out.println("[CORE]\t path:" + childrenNames.get(0).get("path"));
+                    for (Profile.Section childrenName : childrenNames) {
+                        //System.out.println("[CORE]\t path:" + childrenName.get("path"));
+                        if (!childrenName.get("path").isEmpty()) {
+                            path = childrenName.get("path");
+                            //System.out.println("[CORE]\t path:" + childrenName.get("path"));
+                        }
+
+                        if (!childrenName.get("scan_parameter").isEmpty()) {
+                            scanParameter = childrenName.get("scan_parameter");
+                            //System.out.println("[CORE]\t scanParameter:" + scanParameter);
+                        }
+                    }
+
+                    addNewEngine_signal.emit(path, scanParameter, key);
+
+                } else {
+                    badEngineCount++;
+                }
+            }
+
+            //System.out.println(badEngineCount + " " + strings.size());
+            return badEngineCount != strings.size();
         }
 
-        return badEngineCount != strings.size();
+        return false;
     }
 
     private void handleNewTask_slot(String filePath) {

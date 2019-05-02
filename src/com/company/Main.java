@@ -1,19 +1,16 @@
 package com.company;
-import com.github.msteinbeck.sig4j.*;
-
-import java.io.File;
 
 public class Main {
 
     private Core core;
 
     public static void main(String[] args) {
-        new Main().start();
+        new Main().start(args[0]);
     }
 
-    private void start() {
+    private void start(String settingsFilePath) {
         core = new Core();
         core.start();
-        core.init(System.getProperty("user.dir"));
+        core.init(settingsFilePath);
     }
 }

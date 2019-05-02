@@ -1,0 +1,12 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="MiniFenderJava:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/MiniFenderJava_jar</output-path>
+    <root id="archive" name="MiniFenderJava.jar">
+      <element id="module-output" name="MiniFenderJava" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/src/com/company/plugin/sqlite-jdbc-3.27.2.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/src/com/company/plugin/json-simple-1.1.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/src/com/company/plugin/ini4j-0.5.4.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/src/com/company/plugin/sig4j-1.0.1.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>
