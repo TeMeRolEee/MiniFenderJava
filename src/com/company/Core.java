@@ -47,13 +47,17 @@ public class Core extends Thread {
                 infectedCount++;
             }
         }
+        long scanStart = (long) scanMap.get(uuid).get("scanDate");
+        long scanTime = (System.currentTimeMillis()) - scanStart;
 
         if (infectedCount > 0) {
             finalResult.put("scanResult", 1);
         } else {
             finalResult.put("scanResult", 0);
         }
-        finalResult.put("engineResults", scanMap.get(uuid));
+        //finalResult.put("engineResults", scanMap.get(uuid));
+
+        finalResult.put("scanTime", scanTime);
 
         System.out.println(finalResult.toJSONString());
 
@@ -170,7 +174,7 @@ public class Core extends Thread {
 
                 JSONObject initialData = new JSONObject();
                 JSONArray initialArray = new JSONArray();
-                initialData.put("scanDate", Instant.now().toEpochMilli());
+                initialData.put("scanDate", System.currentTimeMillis());
                 initialData.put("engineResults", initialArray);
                 scanMap.put(uuid, initialData);
 
